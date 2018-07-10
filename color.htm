@@ -1,0 +1,115 @@
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<body>
+Java:<input item="Java" value="255" /><br/>
+C:<input item="C" value="160" /><br/>
+PHP:<input item="PHP" value="210" /><br/>
+MySQL:<input item="MySQL" value="80" /><br/>
+JavaScript:<input item="JavaScript" value="310" /><br/>
+<button onclick="piechart(); gen=true;">Piechart</button>
+<hr/>
+<canvas id="c" width="450" height="450"></canvas>
+<div id="tooltip"></div>
+<script>
+	let c = document.querySelector("#c");
+	let ctx = c.getContext("2d");
+	
+	let gen = false;
+	
+	const WIDTH = c.width;
+	const HEIGHT = c.height;
+	
+	const R = 200;
+	
+	const X = WIDTH/2;
+	const Y = HEIGHT/2;
+	
+	const FONT_SIZE = 20;
+	
+	let colors = ["pink", "green", "yellow", "red", "gray"];
+	
+	// 每一个扇形上语言名的中心坐标
+	let positions = [];
+	
+	c.onmousemove = (event) => {
+		// 生成报表就显示随鼠标移动的数据提示
+		if (gen) {
+			// offset：相对于组件内部区域位置
+			let x = event.offsetX;
+			let y = event.offsetY;
+			let index = getPointPosition(x, y);
+			// 返回的是指向文字区域的索引
+			if (index == -1) {
+				// 没有指向语言文字区域
+				document.querySelector("#tooltip").style.display = "none";
+			} else {
+				document.querySelector("#tooltip").style.display = "block";
+				document.querySelector("#tooltip").textContent = document.querySelectorAll("input[item]")[index].value;
+				// page：提示层随着鼠标在页面上的位置移动
+				document.querySelector("#tooltip").style.top = event.pageY + 10;
+				document.querySelector("#tooltip").style.left = event.pageX + 10;
+			}
+		}
+	}
+	
+	// 根据鼠标的x, y，计算出当前指向了哪一个扇形数据
+	let getPointPosition = (x, y) => {
+		let items = document.querySelectorAll("input[item]");
+		// 循环判断鼠标靠近了哪一个语言名
+		for (let i=0; i<items.length; i++) {
+			// 计算出文字的宽度
+			let fontWidth = ctx.measureText(items[i].getAttribute("item")).width;
+			if (x>positions[i].x-fontWidth/2-10 && x<positions[i].x+fontWidth/2+10 && y>positions[i].y-FONT_SIZE/2-5 && y<positions[i].y+FONT_SIZE/2+5)
+				return i;
+		}
+		
+		return -1;
+	}
+	
+	let getPercent = (i) => {
+		let items = document.querySelectorAll("input[item]");
+		let sum = 0;
+		items.forEach((item, index) => {
+			sum += parseInt(item.value);
+		});
+		return items[i].value / sum;
+	}
+	
+	let piechart = () => {
+		let start = Math.PI*3/2;
+		let end;
+		
+		let items = document.querySelectorAll("input[item]");
+
+		items.forEach((item, index) => {
+			// 结束弧度等于起始弧度加当前扇形的百分比
+			end = start + getPercent(index)*Math.PI*2;
+
+			ctx.beginPath();
+			ctx.fillStyle = colors[index];
+			ctx.moveTo(X, Y);
+			ctx.arc(X, Y, R, start, end);
+			ctx.fill();
+			
+			// 在扇形中心绘制语言名
+			ctx.beginPath();
+			let x = X + R*Math.cos((start+end)/2) / 2;
+			let y = Y + R*Math.sin((start+end)/2) / 2;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			ctx.fillStyle = "black";
+			ctx.font = `${FONT_SIZE}px Times New Roman`;
+			ctx.fillText(item.getAttribute("item"), x, y);
+			// 将语言名的中心坐标存入数组中，以便后续判断是否鼠标靠近这个位置
+			positions.push({x, y});
+			
+			// 下一个扇形的起始弧度等于上一个扇形的结束弧度
+			start = end;
+		});
+		
+	}
+</script>
+
+
+
+
+</body>
